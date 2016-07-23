@@ -152,7 +152,9 @@ def bulk_upsert(cls, data, cstep):
         i+=step
     if cstep > config['LAST_RECORD_STEP'] and success:
         config['LAST_RECORD_STEP'] = cstep
-        if config['LOG_FILE'] != '':
+        target = open(config['LOG_FILE'], 'r')
+        num = int(target.read())
+        if config['LOG_FILE'] != '' and num < cstep:
             target = open(config['LOG_FILE'], 'w')
             target.write(str(config['LAST_RECORD_STEP']))
             target.close()
