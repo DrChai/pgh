@@ -70,7 +70,7 @@ def search(args):
             login(args, position)
     else:
         login(args, position)
-
+    failed_consecutive = 0
     i = 1
     for step_location in generate_location_steps(position, num_steps):
         log.info('Scanning step {:d} of {:d}.'.format(i, num_steps**2))
@@ -101,9 +101,10 @@ def search(args):
             #         time.sleep(60*2)
             #         continue
             failed_consecutive += 1
-            if(failed_consecutive >= 5):
-                log.error('Niantic servers under heavy load. Waiting before trying again')
-            	time.sleep(5)
+            # if failed_consecutive >= 5:
+            log.error('Niantic servers under heavy load. Waiting before trying again | %s' % i)
+            time.sleep(60*10)
+            api.login(args.auth_service, args.username, args.password)
         failed_consecutive = 0
         log.info('Completed {:5.2f}% of scan.'.format(float(i) / num_steps**2*100))
         i += 1

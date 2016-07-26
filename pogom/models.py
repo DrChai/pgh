@@ -7,6 +7,7 @@ from peewee import Model, SqliteDatabase, InsertQuery, IntegerField,\
 from datetime import datetime
 from base64 import b64encode
 
+from pymysql import OperationalError
 from .utils import get_pokemon_name
 from .transform import transform_from_wgs_to_gcj
 from . import config
@@ -148,7 +149,11 @@ def bulk_upsert(cls, data, cstep):
     success = False
     while i < num_rows:
         log.debug("Inserting items {} to {}".format(i, min(i+step, num_rows)))
-        success = InsertQuery(cls, rows=data.values()[i:min(i+step, num_rows)]).upsert().execute()
+        try:
+            success = InsertQuery(cls, rows=data.values()[i:min(i+step, num_rows)]).upsert().execute()
+        except:
+            db.connect()
+            success = InsertQuery(cls, rows=data.values()[i:min(i+step, num_rows)]).upsert().execute()
         i+=step
     if cstep > config['LAST_RECORD_STEP'] and success:
         config['LAST_RECORD_STEP'] = cstep
