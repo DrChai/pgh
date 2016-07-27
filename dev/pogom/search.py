@@ -4,7 +4,7 @@
 import logging
 import time
 import math
-
+import json
 from threading import Thread, Lock
 from queue import Queue
 
@@ -177,7 +177,7 @@ def search(args, i):
 
         search_args = ( i, total_steps, step_location, step, lock)
         search_queue.put(search_args)
-        log.info('Completed {:d}.  {:5.2f}% of scan.'.format(step, float(step) / total_steps*100))
+        # log.info('Completed {:d}.  {:5.2f}% of scan.'.format(step, float(step) / total_steps*100))
         if failed_consecutive > 0:
             api.login(args.auth_service, args.username, args.password)
             search_queue.put(search_args)
@@ -186,16 +186,43 @@ def search(args, i):
 
 def search_loop(args):
     i = 0
+    index = 0
+    with open('new-stopngym.json') as data_file:
+        data = json.load(data_file)
+        new_stops = data['new_stops']
+        new_gyms = data['new_gyms']
     try:
         while True:
             log.info("Map iteration: {}".format(i))
+            if i%4 == 0:
+                try:
+                    if not getattr(new_stops[index],"hyp_count",None):
+                        lon, lat = new_stops[index]['coordinates']
+                        index += 1
+                        config['NEXT_LOCATION'] = {'lat': lat, 'lon': lon}
+                        log.info('Changing {:d} coords.'.format(new_stops[index]["id"]))
+                except IndexError:
+                    index = 0
+                    break
             search(args, i)
             log.info("Scanning complete.")
             if args.scan_delay > 1:
                 log.info('Waiting {:d} seconds before beginning new scan.'.format(args.scan_delay))
                 time.sleep(args.scan_delay)
             i += 1
-
+        while True:
+            search(args, i)
+            log.info("Scanning complete.")
+            if i%4 == 0:
+                try:
+                    if not getattr(new_gyms[index],"hyp_count",None):
+                        lon, lat = new_gyms[index]['coordinates']
+                        index += 1
+                        config['NEXT_LOCATION'] = {'lat': lat, 'lon': lon}
+                        log.info('Changing {:d} coords.'.format(new_stops[index]["id"]))
+                except IndexError:
+                    break
+            i += 1
     # This seems appropriate
     except Exception as e:
         log.info('{0.__class__.__name__}: {0} - waiting {1} sec(s) before restarting'.format(e, args.scan_delay))
