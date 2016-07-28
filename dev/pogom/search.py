@@ -192,7 +192,6 @@ def search_loop(args):
             time.sleep(args.scan_delay)
         i += 1
     while True:
-        search(args, i)
         log.info("Scanning complete.")
         if i%2 == 0:
             try:
@@ -203,6 +202,7 @@ def search_loop(args):
                     log.info('Changing {:d} coords.'.format(new_stops[index]["id"]))
             except IndexError:
                 break
+        search(args, i)
         i += 1
 
 
